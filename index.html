@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健身冒險譚 Fitness Saga - 手遊版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40jB90W6W3g0JAhqA5o7qL1dO2b5F+YdCjI/gYpG8hGgYg0F9d+Q7P2sM3d9sK6B1c4pG1d3u7fA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Cinzel:wght@700&display=swap');
+
+        :root {
+            --bg-dark: #121212;
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #e94560;
+            --str-color: #ffc107; /* 力量黃 */
+            --end-color: #03a9f4; /* 耐力藍 */
+            --text-light: #e0e0e0;
+            --text-dark: #333;
+            --border-color: #537895;
+        }
+
+        /* 1. Mobile First: Single Column Layout */
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 0; /* 移除 body 邊距 */
+            min-height: 100vh;
+            padding-bottom: 60px; /* 底部導航列空間 */
+        }
+
+        .game-world {
+            width: 100%;
+            max-width: 1200px;
+            display: block; /* 預設堆疊 */
+            gap: 0;
+            padding: 10px 10px 0 10px; /* 內邊距 */
+        }
+
+        /* --- 左側角色面板 (手機上為頂部區塊) --- */
+        .character-panel {
+            background-color: var(--primary);
+            border: 2px solid var(--border-color);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: relative; /* 手機上不粘滯 */
+            margin-bottom: 10px;
+            transition: border-color 0.5s ease;
+        }
+
+        .avatar-container {
+            background-color: var(--secondary);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+        #avatar-image {
+            width: 100%;
+            height: 150px; /* 手機上略小 */
+            background-color: #000;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            font-family: 'Cinzel', serif;
+            transition: all 0.5s ease;
+        }
+        #player-name {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5em;
+            color: var(--accent);
+            margin-top: 10px;
+        }
+        
+        /* New: Gold Display */
+        .gold-display {
+            background-color: var(--str-color);
+            color: var(--text-dark);
+            padding: 5px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-family: 'Cinzel', serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        .gold-display span {
+            font-size: 1.2em;
+        }
+
+
+        .xp-bar {
+            width: 100%; height: 20px; background-color: var(--secondary); border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color);
+        }
+        .xp-bar > div {
+            height: 100%; transition: width 0.5s ease; text-align: right; padding-right: 5px; font-size: 0.8em; font-weight: bold; color: var(--text-dark);
+            display: flex; align-items: center; justify-content: flex-end;
+        }
+        #str-xp-bar { background: linear-gradient(90deg, #ff8f00, var(--str-color)); }
+        #end-xp-bar { background: linear-gradient(90deg, #0077c2, var(--end-color)); }
+
+        .stats-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        .stat-box {
+            background-color: var(--secondary); padding: 8px; border-radius: 5px; text-align: center;
+        }
+        .stat-box .label { font-size: 0.8em; color: #aaa; }
+        .stat-box .value { font-size: 1.2em; font-weight: bold; }
+
+        /* --- 右側主內容區 (手機上為底部區塊) --- */
+        .main-content {
+            background-color: var(--primary);
+            border: 2px solid var(--border-color);
+            border-radius: 15px 15px 0 0; /* 手機底部圓角 */
+            padding: 20px 20px 10px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .tabs { display: none; } /* 隱藏頂部導航，改用底部導航 */
+        .tab-button {
+            padding: 10px 20px; cursor: pointer; background: none; border: none; color: var(--text-light); font-size: 1em; font-weight: bold;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-button:hover { color: var(--accent); }
+        .tab-button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* 活動卡片 */
+        .activity-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; /* 手機上卡片可以小一點 */
+        }
+        .activity-card {
+            background-color: var(--secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px; /* 略減內邊距 */
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        /* Inbody & 成就 */
+        .form-grid, .achievement-grid {
+            display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; /* 手機上單欄顯示 */
+        }
+
+        /* New: Tavern Styles */
+        #tavern-chat-box {
+            background-color: var(--secondary);
+            border-radius: 8px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .chat-message {
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .chat-message .meta {
+            font-size: 0.8em;
+            color: var(--accent);
+            font-weight: bold;
+            display: block;
+        }
+        .chat-message p {
+            margin: 3px 0 0 0;
+            padding: 8px 12px;
+            background-color: #333;
+            border-radius: 15px;
+            display: inline-block;
+            max-width: 90%;
+        }
+        #chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+        #chat-input-container input {
+            flex-grow: 1;
+            background-color: var(--secondary); border: 1px solid var(--border-color); color: var(--text-light); padding: 8px; border-radius: 5px;
+        }
+
+
+        /* New: Bottom Navigation Bar (Mobile UI) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: var(--secondary);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 50;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 0.7em;
+            cursor: pointer;
+            width: 20%;
+            height: 100%;
+            transition: color 0.2s;
+            font-weight: bold;
+        }
+        .nav-item.active {
+            color: var(--accent);
+        }
+        .nav-item i {
+            font-size: 1.5em;
+            margin-bottom: 3px;
+        }
+
+
+        /* 2. Desktop Layout (Two Columns) */
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+                padding-bottom: 0; /* 桌面移除底部導航空間 */
+            }
+            .game-world {
+                display: grid;
+                grid-template-columns: 300px 1fr;
+                gap: 20px;
+                padding: 0;
+            }
+            .character-panel {
+                position: sticky; /* Sticky on desktop */
+                top: 20px;
+                margin-bottom: 0;
+            }
+            .main-content {
+                border-radius: 15px;
+                padding: 20px;
+            }
+            .tabs { display: flex; } /* 桌面顯示頂部導航 */
+            .bottom-nav { display: none; } /* 桌面隱藏底部導航 */
+            .form-grid { grid-template-columns: repeat(2, 1fr); }
+            #avatar-image { height: 200px; } /* 桌面頭像放大 */
+        }
+    </style>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+</head>
+<body>
+
+    <div class="game-world">
+        <aside class="character-panel">
+            <div class="gold-display">
+                <i class="fas fa-coins"></i> 動力幣: <span id="gold-val">0</span>
+            </div>
+
+            <div class="avatar-container">
+                <div id="avatar-image">🛡️</div>
+                <h3 id="player-name">冒險家</h3>
+            </div>
+            <div>
+                <label>力量等級 (STR Lvl.<span id="str-level-val">1</span>)</label>
+                <div class="xp-bar"><div id="str-xp-bar"></div></div>
+            </div>
+            <div>
+                <label>耐力等級 (END Lvl.<span id="end-level-val">1</span>)</label>
+                <div class="xp-bar"><div id="end-xp-bar"></div></div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box"><div class="label">總等級</div><div class="value" id="level-val">1</div></div>
+                <div class="stat-box"><div class="label">路線</div><div class="value" id="path-val">-</div></div>
+                <div class="stat-box"><div class="label">肌量(kg)</div><div class="value" id="muscle-val">-</div></div>
+                <div class="stat-box"><div class="label">體脂(%)</div><div class="value" id="fat-val">-</div></div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="tabs">
+                <button class="tab-button active" onclick="navigate('training', this)">🏋️ 訓練場</button>
+                <button class="tab-button" onclick="navigate('inbody', this)">🧬 數據紀錄</button>
+                <button class="tab-button" onclick="navigate('avatar', this)">🛍️ 衣櫥/角色</button>
+                <button class="tab-button" onclick="navigate('achievements', this)">🏆 成就殿堂</button>
+                <button class="tab-button" onclick="navigate('tavern', this)">🍻 解憂酒館</button>
+            </div>
+
+            <div id="training" class="tab-content active">
+                <h3>今日任務清單 (每日刷新：CD7 不確定性)</h3>
+                <h4 style="margin-top: 15px;">增肌路線活動 (STR 導向)</h4>
+                <div id="muscle-activities" class="activity-grid"></div>
+                <h4 style="margin-top: 20px;">減脂路線活動 (END 導向)</h4>
+                <div id="fatloss-activities" class="activity-grid"></div>
+            </div>
+
+            <div id="inbody" class="tab-content">
+                <h3>更新你的 inBody 數據 (CD2 發展與成就)</h3>
+                <p>定期更新數據是遊戲中獲得大量 XP 和 **動力幣** 的重要方式，反映了你在現實中的努力成果。</p>
+                <div class="form-grid">
+                    <div class="form-group"><label for="inbody-muscle">骨骼肌量 (kg)</label><input type="number" id="inbody-muscle" step="0.1"></div>
+                    <div class="form-group"><label for="inbody-fat">體脂率 (%)</label><input type="number" id="inbody-fat" step="0.1"></div>
+                    <div class="form-group"><label for="inbody-visceral">內臟脂肪等級</label><input type="number" id="inbody-visceral" step="1"></div>
+                    <div class="form-group"><label for="inbody-weight">體重 (kg)</label><input type="number" id="inbody-weight" step="0.1"></div>
+                </div>
+                <button class="submit-btn" onclick="updateInBody()">提交數據並結算獎勵</button>
+            </div>
+            
+            <div id="avatar" class="tab-content">
+                <h3>角色外觀與客製化 (CD3 創造力與回饋)</h3>
+                <p>設定您的基本資料，您的 InBody 數據將影響角色的虛擬體態。</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="char-gender">性別</label>
+                        <select id="char-gender" style="padding: 8px; border-radius: 5px; background-color: var(--secondary); border: 1px solid var(--border-color); color: var(--text-light);" onchange="updateCharacterSettings()">
+                            <option value="male">男性 ♂</option>
+                            <option value="female">女性 ♀</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label for="char-height">身高 (cm)</label><input type="number" id="char-height" step="1" min="100" max="250"></div>
+                </div>
+                <button class="submit-btn" onclick="updateCharacterSettings()">確認角色設定變更</button>
+
+                <div style="margin-top: 30px;">
+                    <h4>衣櫥 (金幣商店：CD6 稀缺性)</h4>
+                    <p>消耗 <span style="color: var(--str-color); font-weight: bold;">動力幣</span> 購買新的服裝與造型！</p>
+                    <div id="store-items" class="activity-grid">
+                        <div class="activity-card" onclick="buyItem('hat')"><h4>🧙 魔法帽</h4><div class="xp-reward">💰 500</div></div>
+                        <div class="activity-card" onclick="buyItem('shirt')"><h4>👕 戰士T恤</h4><div class="xp-reward">💰 800</div></div>
+                        <div class="activity-card" onclick="buyItem('shoes')"><h4>👟 疾風跑鞋</h4><div class="xp-reward">💰 1200</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="achievements" class="tab-content">
+                <h3>榮譽獎勵 (CD4 所有權與佔有欲)</h3>
+                <p>解鎖這些成就，證明你的努力與堅持。</p>
+                <div id="achievement-list" class="achievement-grid"></div>
+            </div>
+
+            <div id="tavern" class="tab-content">
+                <h3>解憂酒館 (匿名社群：CD5 同理心)</h3>
+                <p>在這裡，您可以匿名發布您的健身心得、困擾或尋求鼓勵。所有使用者名稱皆為系統隨機分配。</p>
+                <div id="tavern-chat-box">
+                    <div class="chat-message"><span class="meta">#34 瘦不下來的史萊姆</span><p>我已經連續兩週體重沒動了...快撐不下去了，有人能給我一些突破平台期的建議嗎？</p></div>
+                    <div class="chat-message"><span class="meta">#12 力量之王</span><p>別放棄！多嘗試不同的訓練強度或換個有氧方式！💪 內臟脂肪下降一階的成就超讚！</p></div>
+                </div>
+                <div id="chat-input-container">
+                    <input type="text" id="tavern-input" placeholder="匿名發布您的訊息..." maxlength="100">
+                    <button class="submit-btn" style="padding: 8px 15px; width: auto; margin-top: 0;" onclick="postAnonymousMessage()">發布</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="navigate('training', this)"><i class="fas fa-dumbbell"></i> 訓練場</div>
+        <div class="nav-item" onclick="navigate('avatar', this)"><i class="fas fa-user-circle"></i> 衣櫥</div>
+        <div class="nav-item" onclick="navigate('achievements', this)"><i class="fas fa-trophy"></i> 成就</div>
+        <div class="nav-item" onclick="navigate('tavern', this)"><i class="fas fa-beer"></i> 酒館</div>
+    </div>
+
+
+    <div id="path-selection-overlay" class="overlay">
+        <div class="modal">
+            <h2>選擇你的冒險路線（驅動力：重大使命 CD1）</h2>
+            <p>路線將決定你的主要經驗值來源與目標。</p>
+            <div class="path-buttons">
+                <button id="muscle-path-btn" class="path-btn" onclick="choosePath('muscle')">💪 增肌路線 - 成為力量之王</button>
+                <button id="fatloss-path-btn" class="path-btn" onclick="choosePath('fatloss')">🔥 減脂路線 - 成為耐力之神</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div id="auth-overlay" class="overlay" style="display: flex; z-index: 200;">
+        <div class="modal">
+            <h2>登入健身冒險譚</h2>
+            <p>登入以同步您的雲端進度！（驅動力：損失避免 CD8）</p>
+            <div class="path-buttons">
+                <button id="google-login-btn" class="path-btn" onclick="signInWithGoogle()" style="background-color: #4285F4; color: white; border: 2px solid #8ab4f8;">🚀 Google 登入</button>
+                
+                <button id="guest-login-btn" class="path-btn" onclick="guestSignIn()" style="background-color: var(--secondary); color: var(--text-light); border: 2px solid #aaa; margin-top: 10px;">👟 遊客模式 (無需登入)</button>
+                </div>
+            <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
+                <input type="email" id="email-input" placeholder="電子郵件" style="width: 80%; padding: 10px; margin-bottom: 10px; background-color: var(--secondary); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 5px;">
+                <input type="password" id="password-input" placeholder="密碼" style="width: 80%; padding: 10px; margin-bottom: 10px; background-color: var(--secondary); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 5px;">
+                <button id="email-login-btn" class="submit-btn" onclick="signInWithEmail()" style="width: 85%; margin-top: 0;">登入或註冊</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+    // --- 🔥 3. Firebase 初始化與驗證核心邏輯 (使用 v9.x.x compat) ---
+    
+    // Your web app's Firebase configuration
+    // ⚠️ 務必將以下配置替換為您自己的 Firebase Project 配置
+    const firebaseConfig = {
+        apiKey: "AIzaSyDz_F9aS9M78QJ9_aouz_7AvfWvs-FrRcM", // 替換為你的 API Key
+        authDomain: "fitness-saga-web.firebaseapp.com",
+        projectId: "fitness-saga-web",
+        storageBucket: "fitness-saga-web.firebasestorage.app",
+        messagingSenderId: "889222535170",
+        appId: "1:889222535170:web:79ed27698667d2e0f02f1b",
+        measurementId: "G-7TTJV96B8T"
+    };
+
+    // 初始化 Firebase App
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    db.settings({ timestampsInSnapshots: true }); // 設置 Firestore
+    let currentUser = null; // 用來儲存當前登入的使用者
+
+    // --- 新增遊客模式的常數與函式 ---
+    const GUEST_ID_KEY = 'fitnessSagaGuestId';
+    const GUEST_STATE_KEY = 'fitnessSagaGuestState';
+
+    function generateGuestId() {
+        return 'guest_' + Math.random().toString(36).substring(2, 9) + Date.now().toString().substring(9);
+    }
+    
+    // 遊客登入函式
+    function guestSignIn() {
+        let guestId = localStorage.getItem(GUEST_ID_KEY);
+        if (!guestId) {
+            guestId = generateGuestId();
+            localStorage.setItem(GUEST_ID_KEY, guestId);
+        }
+        
+        // 建立一個模擬的 currentUser 物件，包含 isGuest 標記
+        currentUser = {
+            uid: guestId,
+            isGuest: true,
+            displayName: '遊客冒險者',
+            email: 'guest@local.host'
+        };
+
+        document.getElementById('auth-overlay').style.display = 'none';
+        document.getElementById('player-name').textContent = currentUser.displayName;
+        
+        loadGameFromLocalStorage(); // 載入遊客的本地遊戲資料
+        showToast('歡迎來到遊客模式！進度將儲存在本機。', 'info');
+    }
+
+    // 監聽使用者登入狀態的變化 (已修改，包含遊客模式邏輯)
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            // --- 情況 A: 正式用戶已登入 (FIREBASE) ---
+            currentUser = user;
+            document.getElementById('auth-overlay').style.display = 'none'; // 隱藏登入畫面
+            document.getElementById('player-name').textContent = user.displayName || user.email.split('@')[0] || '冒險家';
+            loadGameFromFirestore(); // 從 Firestore 讀取雲端遊戲資料
+        } else {
+            // --- 情況 B: 用戶未登入 (檢查是否為遊客) ---
+            const guestId = localStorage.getItem(GUEST_ID_KEY);
+            const guestState = localStorage.getItem(GUEST_STATE_KEY);
+            
+            if (guestId && guestState) {
+                // 是遊客，自動進入遊客模式
+                currentUser = { uid: guestId, isGuest: true, displayName: '遊客冒險家', email: 'guest@local.host' };
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('player-name').textContent = currentUser.displayName;
+                loadGameFromLocalStorage();
+            } else {
+                // 情況 C: 既不是正式用戶也不是遊客 (或遊客資料已清除)
+                currentUser = null;
+                document.getElementById('auth-overlay').style.display = 'flex'; // 顯示登入畫面
+                resetGameState();
+                updateAllUI();
+            }
+        }
+    });
+
+    // Google 登入函式
+    function signInWithGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(error => {
+            console.error("Google 登入失敗:", error);
+            showToast(`Google 登入失敗: ${error.message}`);
+        });
+    }
+
+    // Email/密碼 登入或註冊函式
+    function signInWithEmail() {
+        const email = document.getElementById('email-input').value;
+        const password = document.getElementById('password-input').value;
+        if (!email || !password) {
+            showToast("請輸入 Email 和密碼");
+            return;
+        }
+        auth.signInWithEmailAndPassword(email, password)
+            .catch(error => {
+                if (error.code === 'auth/user-not-found') {
+                    // 如果帳號不存在，就自動註冊一個新的
+                    showToast("帳號不存在，為您自動註冊...");
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .catch(err => {
+                            console.error("註冊失敗:", err);
+                            showToast(`註冊失敗: ${err.message}`);
+                        });
+                } else {
+                    console.error("登入失敗:", error);
+                    showToast(`登入失敗: ${error.message}`);
+                }
+            });
+    }
+
+
+    // --- 遊戲資料庫 (Game Data) ---
+    const activities = {
+        m01: { name: '重訓（自由重量）', str: 50, end: 10 }, 
+        m02: { name: '地雷管推', str: 60, end: 5 }, 
+        m03: { name: '增肌飲食達標', str: 50, end: 0 }, 
+        m04: { name: '創造性張力訓練', str: 70, end: 15 }, 
+        m05: { name: '漸進式超負荷 (PR)', str: 150, end: 20 }, 
+        m06: { name: '睡眠達標 (8小時)', str: 20, end: 20 }, 
+        m07: { name: '乳清補給', str: 15, end: 5 }, 
+        m08: { name: '肌酸補給', str: 25, end: 5 }, 
+        m09: { name: '組間休息2–3分鐘', str: 10, end: 0 }, 
+        m10: { name: '達成重量級成就', str: 200, end: 0 }, 
+        m11: { name: '記錄肌肉圍度', str: 15, end: 0 },
+        f01: { name: '有氧（跑步/登階）', str: 5, end: 50 }, 
+        f02: { name: '高強度間歇 HIIT', str: 20, end: 120 }, 
+        f03: { name: '熱量赤字飲食', str: 0, end: 60 }, 
+        f04: { name: '168 斷食達標', str: 0, end: 40 }, 
+        f05: { name: '步行 >8000 步', str: 5, end: 45 }, 
+        f06: { name: '少糖飲食', str: 0, end: 30 }, 
+        f07: { name: '少油烹調', str: 0, end: 25 }, 
+        f08: { name: '心率 zone2 30分鐘', str: 5, end: 70 }, 
+        f09: { name: '晚餐提早吃', str: 0, end: 20 }, 
+        f10: { name: '糖攝取 <25g', str: 0, end: 35 },
+    };
+
+    const achievements = {
+        ach_newbie: { name: '新手冒險者', desc: '完成首次訓練紀錄', unlocked: false, icon: '🔰' }, 
+        ach_7day: { name: '持續之力', desc: '累計紀錄 7 次', unlocked: false, icon: '🗓️' }, 
+        ach_sleep: { name: '專注之魂', desc: '睡眠達標 5 次', unlocked: false, icon: '🌙' }, 
+        ach_inbody: { name: '體態鍛造者', desc: '首次 inBody 數據改善', unlocked: false, icon: '🧬' },
+        ach_ironwill: { name: '鐵之意志', desc: '重訓累計 14 次', unlocked: false, icon: '🏋️' }, 
+        ach_muscledev: { name: '肌肉開發者', desc: '肌量總共上升 0.3 kg', unlocked: false, icon: '💪' }, 
+        ach_pr: { name: '超負荷勇者', desc: '突破 PR 1 次', unlocked: false, icon: '💥' },
+        ach_shadowstep: { name: '影之步者', desc: '步行 >8000 步 (單日)', unlocked: false, icon: '👟' }, 
+        ach_fatburner: { name: '焚脂舞者', desc: 'HIIT 累計 5 次', unlocked: false, icon: '🔥' }, 
+        ach_visceral: { name: '內臟破壞者', desc: '內臟脂肪下降一階', unlocked: false, icon: '❤️‍🩹' },
+    };
+
+    // --- 遊戲狀態 (Game State) ---
+    let gameState = {};
+    
+    // 函式：重置為初始遊戲狀態
+    function resetGameState() {
+        // 重置時確保成就的描述和圖標是最新的，但鎖定狀態為初始
+        const initialAchievements = {};
+        for (const id in achievements) {
+            initialAchievements[id] = { ...achievements[id], unlocked: false };
+        }
+
+        gameState = {
+            path: null, 
+            level: 1,
+            str: { xp: 0, level: 1 },
+            end: { xp: 0, level: 1 },
+            gold: 0, // 新增金幣系統
+            gender: 'male', // 新增性別
+            height: 170, // 新增身高
+            inbody: { muscle: null, fat: null, visceral: null, weight: null },
+            log: { total_records: 0, sleep_records: 0, pr_records: 0, workout_records: 0, hiit_records: 0 },
+            achievements: initialAchievements,
+            inventory: [] // 新增已購買物品
+        };
+    }
+    resetGameState(); // 首次載入時先初始化一次
+
+    // --- 核心遊戲邏輯 (Core Game Logic) ---
+    // 等級所需經驗值公式 (指數成長，更符合長期遊戲化設計)
+    const xpForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1)); 
+
+    // 檢查遊客模式，並提供升級提醒 (CD8)
+    function checkGuestMode(actionName) {
+        if (currentUser && currentUser.isGuest) {
+            showToast(`⚠️ 您目前是遊客模式。若要永久保存「${actionName}」和成就，請註冊正式帳號！`, 'error');
+            return true;
+        }
+        return false;
+    }
+
+    function choosePath(path) {
+        if (!currentUser) {
+            showToast('請先登入才能選擇路線！', 'error');
+            return;
+        }
+        checkGuestMode('路線選擇');
+
+        gameState.path = path;
+        document.getElementById('path-selection-overlay').style.display = 'none';
+        showToast(`你已選擇 ${path === 'muscle' ? '💪 增肌' : '🔥 減脂'} 路線！`);
+        updateAllUI();
+        saveGame();
+    }
+    
+    // 新增：角色設定變更（包含性別和身高）
+    function updateCharacterSettings() {
+        if (!currentUser) {
+            showToast('請先登入才能設定！', 'error');
+            return;
+        }
+        
+        const newGender = document.getElementById('char-gender').value;
+        const newHeight = parseFloat(document.getElementById('char-height').value);
+        
+        if (isNaN(newHeight) || newHeight < 100 || newHeight > 250) {
+            showToast('請輸入有效身高 (100-250 cm)！', 'error');
+            return;
+        }
+
+        gameState.gender = newGender;
+        gameState.height = newHeight;
+        
+        showToast('角色設定已更新！', 'info');
+        updateAllUI();
+        saveGame();
+    }
+
+    function logActivity(activityId) {
+        if (!currentUser) {
+            showToast('請先登入才能紀錄活動！', 'error');
+            return;
+        }
+        if (!gameState.path) {
+            document.getElementById('path-selection-overlay').style.display = 'flex';
+            showToast('請先選擇你的冒險路線！');
+            return;
+        }
+
+        checkGuestMode('訓練紀錄'); // 新增遊客提醒
+
+        const activity = activities[activityId];
+        if (!activity) return;
+
+        addXP('str', activity.str);
+        addXP('end', activity.end);
+
+        // 新增金幣獎勵 (CD2 發展與成就)
+        const goldReward = Math.floor(Math.random() * 15) + 5; // 5 to 20 gold
+        gameState.gold += goldReward;
+
+        showToast(`完成「${activity.name}」! +${activity.str} STR XP, +${activity.end} END XP, 💰 +${goldReward}`);
+
+        gameState.log.total_records++;
+        // 紀錄活動次數以供成就檢查
+        if (activityId === 'm01') gameState.log.workout_records++;
+        if (activityId === 'm05') gameState.log.pr_records++;
+        if (activityId === 'm06') gameState.log.sleep_records++;
+        if (activityId === 'f02') gameState.log.hiit_records++;
+        // 檢查單次達標成就 (如步行)
+        if (activityId === 'f05') { checkAchievement('ach_shadowstep', true); }
+
+        checkAllAchievements();
+        updateAllUI();
+        saveGame();
+    }
+
+    function addXP(type, amount) {
+        if (amount === 0) return;
+        const stat = gameState[type];
+        stat.xp += amount;
+        
+        while (stat.xp >= xpForLevel(stat.level)) {
+            stat.xp -= xpForLevel(stat.level);
+            stat.level++;
+            showToast(`${type.toUpperCase()} 等級提升至 ${stat.level}!`, 'level-up');
+        }
+        // 總等級為力量和耐力等級的平均值
+        gameState.level = Math.floor((gameState.str.level + gameState.end.level) / 2);
+    }
+
+    function updateInBody() {
+        if (!currentUser) {
+            showToast('請先登入才能紀錄數據！', 'error');
+            return;
+        }
+        
+        checkGuestMode('數據紀錄'); // 新增遊客提醒
+
+        const newMuscle = parseFloat(document.getElementById('inbody-muscle').value);
+        const newFat = parseFloat(document.getElementById('inbody-fat').value);
+        const newVisceral = parseInt(document.getElementById('inbody-visceral').value);
+        const newWeight = parseFloat(document.getElementById('inbody-weight').value);
+        
+        if (isNaN(newMuscle) || isNaN(newFat) || isNaN(newVisceral) || isNaN(newWeight)) {
+            showToast('請填寫所有有效的 inBody 數據！', 'error');
+            return;
+        }
+        
+        let strReward = 0;
+        let endReward = 0;
+        let goldReward = 0; // 新增金幣變數
+        let improved = false;
+        
+        const oldMuscle = gameState.inbody.muscle || 0;
+        const oldFat = gameState.inbody.fat || Infinity; // 初始值設為無限大以便比較
+        const oldVisceral = gameState.inbody.visceral || Infinity;
+        
+        // 計算肌肉成長獎勵 (CD2)
+        if (newMuscle > oldMuscle) {
+            const gain = newMuscle - oldMuscle;
+            strReward += gain * 1000;
+            goldReward += gain * 100; // 肌肉增加獲得金幣
+            showToast(`肌肉量增加 ${gain.toFixed(1)}kg！獲得 ${strReward.toFixed(0)} STR XP！`);
+            improved = true;
+            checkAchievement('ach_muscledev', (newMuscle - oldMuscle) >= 0.3);
+        }
+        
+        // 計算體脂下降獎勵 (CD2)
+        if (newFat < oldFat) {
+            const loss = oldFat - newFat;
+            endReward += loss * 1500;
+            goldReward += loss * 150; // 體脂減少獲得金幣
+            showToast(`體脂率下降 ${loss.toFixed(1)}%！獲得 ${endReward.toFixed(0)} END XP！`);
+            improved = true;
+        }
+        
+        // 計算內臟脂肪下降獎勵 (CD2)
+        if (newVisceral < oldVisceral) {
+            const loss = oldVisceral - newVisceral;
+            endReward += loss * 2000;
+            goldReward += loss * 200; // 內臟脂肪下降獲得金幣
+            showToast(`內臟脂肪下降 ${loss} 階！獲得 ${loss * 2000} END XP！`);
+            improved = true;
+            checkAchievement('ach_visceral', true);
+        }
+
+        if (strReward > 0 || endReward > 0) {
+            addXP('str', strReward);
+            addXP('end', endReward);
+            gameState.gold += goldReward; // 發放金幣獎勵
+            showToast(`🎉 inBody 大幅進步！獲得額外 💰 ${goldReward.toFixed(0)} 動力幣！`, 'achievement');
+        } else {
+            showToast('數據已記錄，但沒有比上次進步喔！繼續加油！', 'info');
+        }
+
+        // 儲存新數據
+        gameState.inbody = { muscle: newMuscle, fat: newFat, visceral: newVisceral, weight: newWeight };
+        
+        checkAchievement('ach_inbody', improved);
+        updateAllUI();
+        saveGame();
+    }
+
+    // 匿名聊天發布（CD5 社交）
+    function postAnonymousMessage() {
+        const input = document.getElementById('tavern-input');
+        const chatBox = document.getElementById('tavern-chat-box');
+        const messageText = input.value.trim();
+        
+        if (!messageText) {
+            showToast('請輸入訊息！', 'error');
+            return;
+        }
+
+        if (messageText.length > 100) {
+            showToast('訊息太長了，最多 100 字！', 'error');
+            return;
+        }
+
+        checkGuestMode('匿名聊天發布');
+        
+        const randomId = Math.floor(Math.random() * 90) + 10;
+        const randomNamePool = ['力量之王', '瘦不下來的史萊姆', '精靈弓手', '腹肌戰神', '深夜跑者', '熱量赤字大師', '蛋白質獵人'];
+        const randomName = randomNamePool[Math.floor(Math.random() * randomNamePool.length)];
+        
+        const newMessage = document.createElement('div');
+        newMessage.className = 'chat-message';
+        newMessage.innerHTML = `<span class="meta">#${randomId} ${randomName} (您)</span><p>${messageText}</p>`;
+        
+        chatBox.appendChild(newMessage);
+        chatBox.scrollTop = chatBox.scrollHeight; // 捲動到底部
+        input.value = '';
+
+        // 模擬獲得社交獎勵
+        gameState.gold += 50;
+        showToast('🍻 成功發布匿名訊息! 獲得 💰 50 動力幣！', 'info');
+        updateUI();
+        saveGame();
+    }
+
+    // 購物功能（模擬）
+    function buyItem(itemId) {
+        const costs = { 'hat': 500, 'shirt': 800, 'shoes': 1200 };
+        const cost = costs[itemId];
+        const itemName = { 'hat': '魔法帽', 'shirt': '戰士T恤', 'shoes': '疾風跑鞋' }[itemId];
+
+        if (gameState.inventory.includes(itemId)) {
+            showToast(`您已經擁有 ${itemName} 了！`, 'info');
+            return;
+        }
+
+        if (gameState.gold >= cost) {
+            gameState.gold -= cost;
+            gameState.inventory.push(itemId);
+            showToast(`🛒 成功購買 ${itemName}！消耗 💰 ${cost} 動力幣！`, 'achievement');
+            updateAllUI();
+            saveGame();
+        } else {
+            showToast(`⚠️ 動力幣不足！需要 ${cost} 才能購買。`, 'error');
+        }
+    }
+
+
+    // 檢查並解鎖成就 (CD4)
+    function checkAchievement(achId, condition) {
+        if (!gameState.achievements[achId].unlocked && condition) {
+            const achData = achievements[achId]; 
+            
+            gameState.achievements[achId].unlocked = true;
+            gameState.achievements[achId].name = achData.name;
+            gameState.achievements[achId].desc = achData.desc;
+            gameState.achievements[achId].icon = achData.icon;
+            
+            showToast(`🏆 成就解鎖：${achData.name}!`, 'achievement');
+            updateAchievementsUI();
+            saveGame(); 
+        }
+    }
+
+    function checkAllAchievements() {
+        checkAchievement('ach_newbie', gameState.log.total_records >= 1);
+        checkAchievement('ach_7day', gameState.log.total_records >= 7);
+        checkAchievement('ach_sleep', gameState.log.sleep_records >= 5);
+        checkAchievement('ach_ironwill', gameState.log.workout_records >= 14);
+        checkAchievement('ach_pr', gameState.log.pr_records >= 1);
+        checkAchievement('ach_fatburner', gameState.log.hiit_records >= 5);
+    }
+
+    // --- UI 更新 (UI Update) ---
+    // 統一的導航切換邏輯
+    function navigate(tabName, clickedElement) {
+        // 1. Update Tab Content Visibility
+        let tabcontent = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+            tabcontent[i].classList.remove("active");
+        }
+        document.getElementById(tabName).style.display = "block";
+        document.getElementById(tabName).classList.add("active");
+
+        // 2. Update Top Tab Buttons Active State
+        let tablinks = document.getElementsByClassName("tab-button");
+        for (let i = 0; i < tablinks.length; i++) {
+            tablinks[i].classList.remove("active");
+        }
+        
+        if (clickedElement && clickedElement.classList.contains('tab-button')) {
+            clickedElement.classList.add("active");
+        } else {
+             const targetTopButton = Array.from(tablinks).find(btn => btn.getAttribute('onclick').includes(`'${tabName}'`));
+             if (targetTopButton) targetTopButton.classList.add("active");
+        }
+
+
+        // 3. Update Bottom Nav Active State
+        document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        const navMap = {
+            'training': '訓練場',
+            'avatar': '衣櫥',
+            'achievements': '成就',
+            'tavern': '酒館'
+        };
+        const targetNavText = navMap[tabName];
+        if (targetNavText) {
+             if (clickedElement && clickedElement.classList.contains('nav-item')) {
+                clickedElement.classList.add('active');
+             } else {
+                 const targetNavItem = Array.from(document.querySelectorAll('.bottom-nav .nav-item')).find(item => item.textContent.includes(targetNavText));
+                 if (targetNavItem) targetNavItem.classList.add('active');
+             }
+        }
+    }
+    
+    // 兼容舊的 openTab 函式
+    function openTab(evt, tabName) {
+        navigate(tabName, evt.currentTarget);
+    }
+
+
+    function updateUI() {
+        document.getElementById('level-val').textContent = gameState.level;
+        document.getElementById('path-val').textContent = gameState.path === 'muscle' ? '💪 增肌' : (gameState.path === 'fatloss' ? '🔥 減脂' : '-');
+        document.getElementById('muscle-val').textContent = gameState.inbody.muscle !== null ? gameState.inbody.muscle.toFixed(1) : '-';
+        document.getElementById('fat-val').textContent = gameState.inbody.fat !== null ? gameState.inbody.fat.toFixed(1) : '-';
+        document.getElementById('str-level-val').textContent = gameState.str.level;
+        document.getElementById('end-level-val').textContent = gameState.end.level;
+        
+        // 更新金幣
+        document.getElementById('gold-val').textContent = gameState.gold.toLocaleString();
+
+        // STR XP Bar
+        const strXpNeeded = xpForLevel(gameState.str.level);
+        const strPercentage = (gameState.str.xp / strXpNeeded) * 100;
+        const strBar = document.getElementById('str-xp-bar');
+        strBar.style.width = `${strPercentage}%`;
+        strBar.textContent = `${gameState.str.xp}/${strXpNeeded}`;
+        
+        // END XP Bar
+        const endXpNeeded = xpForLevel(gameState.end.level);
+        const endPercentage = (gameState.end.xp / endXpNeeded) * 100;
+        const endBar = document.getElementById('end-xp-bar');
+        endBar.style.width = `${endPercentage}%`;
+        endBar.textContent = `${gameState.end.xp}/${endXpNeeded}`;
+
+        // InBody & Character 數據回填
+        if (gameState.inbody.muscle !== null) document.getElementById('inbody-muscle').value = gameState.inbody.muscle;
+        if (gameState.inbody.fat !== null) document.getElementById('inbody-fat').value = gameState.inbody.fat;
+        if (gameState.inbody.visceral !== null) document.getElementById('inbody-visceral').value = gameState.inbody.visceral;
+        if (gameState.inbody.weight !== null) document.getElementById('inbody-weight').value = gameState.inbody.weight;
+        document.getElementById('char-gender').value = gameState.gender;
+        document.getElementById('char-height').value = gameState.height;
+    }
+    
+    // 根據體態、性別和身高改變頭像 (CD3: 賦予創造力與回饋)
+    function updateAvatar() {
+        const avatar = document.getElementById('avatar-image');
+        const panel = document.querySelector('.character-panel');
+        const muscle = gameState.inbody.muscle;
+        const fat = gameState.inbody.fat;
+        const height = gameState.height || 170; // 預設 170
+
+        let emoji = '🛡️';
+        let color = 'var(--text-light)';
+        let title = '數據待更新';
+        let borderColor = 'var(--border-color)';
+
+        if (fat !== null && muscle !== null && gameState.inbody.weight !== null) {
+            const BMI_proxy = gameState.inbody.weight / Math.pow(height / 100, 2);
+            
+            if (gameState.gender === 'male') {
+                if (fat < 15 && muscle > 35) { // 頂級體態
+                    emoji = '💪'; // 力量之王
+                    color = '#ffc107';
+                    title = '健美大師！';
+                    borderColor = '#ffc107';
+                } else if (fat < 20 && muscle > 30) { // 精實戰士
+                    emoji = '⚔️'; 
+                    color = '#38c738';
+                    title = '精實戰士';
+                    borderColor = '#38c738';
+                } else if (BMI_proxy > 27) {
+                    emoji = '🐻'; // 體型較大
+                    color = '#ffcc80';
+                    title = '力量儲備中...';
+                    borderColor = '#ffcc80';
+                } else {
+                    emoji = '🏃';
+                }
+            } else { // female
+                if (fat < 22 && muscle > 25) { // 頂級體態
+                    emoji = '💃'; // 健美舞者
+                    color = '#e94560';
+                    title = '健美大師！';
+                    borderColor = '#e94560';
+                } else if (fat < 25 && muscle > 20) { // 精實戰士
+                    emoji = '🏹'; 
+                    color = '#03a9f4';
+                    title = '精實弓箭手';
+                    borderColor = '#03a9f4';
+                } else if (BMI_proxy > 27) {
+                    emoji = '🍎'; // 體型較大
+                    color = '#ff8f00';
+                    title = '耐力儲備中...';
+                    borderColor = '#ff8f00';
+                } else {
+                    emoji = '🧘';
+                }
+            }
+        }
+        
+        // 角色外觀隨身高變化 (例如：頭像尺寸)
+        // 根據身高在 150cm (0.8) 到 200cm (1.2) 之間調整尺寸因子
+        const sizeFactor = 1 + ((height - 170) / 100) * 0.5; // 170cm -> 1, 220cm -> 1.25, 120cm -> 0.75
+        avatar.style.fontSize = `${2 * Math.max(0.7, Math.min(1.3, sizeFactor))}em`; // 限制尺寸在合理範圍
+
+        // 根據裝備改變頭像
+        if (gameState.inventory.includes('hat')) {
+             emoji = '👑'; // 裝備帽子
+        }
+        
+        avatar.textContent = emoji;
+        avatar.style.color = color;
+        avatar.title = title;
+        panel.style.borderColor = borderColor; // 根據體態改變邊框顏色
+    }
+
+    // 動態生成活動卡片
+    function populateActivities() {
+        const muscleContainer = document.getElementById('muscle-activities');
+        const fatlossContainer = document.getElementById('fatloss-activities');
+        muscleContainer.innerHTML = ''; 
+        fatlossContainer.innerHTML = ''; 
+        for (const id in activities) {
+            const act = activities[id];
+            const card = document.createElement('div');
+            card.className = 'activity-card';
+            card.onclick = () => logActivity(id);
+            card.innerHTML = `<h4>${act.name}</h4><div class="xp-reward"><span class="xp-str">+${act.str} STR</span> / <span class="xp-end">+${act.end} END</span></div>`;
+            if (id.startsWith('m')) {
+                muscleContainer.appendChild(card);
+            } else {
+                fatlossContainer.appendChild(card);
+            }
+        }
+    }
+
+    // 更新成就 UI
+    function updateAchievementsUI() {
+        const container = document.getElementById('achievement-list');
+        container.innerHTML = '';
+        const sortedAchievements = Object.entries(gameState.achievements).sort(([, a], [, b]) => b.unlocked - a.unlocked); // 已解鎖的排在前面
+
+        for (const [id, ach] of sortedAchievements) {
+            const staticAch = achievements[id];
+            const card = document.createElement('div');
+            card.className = `achievement-card ${ach.unlocked ? 'unlocked' : ''}`;
+            card.innerHTML = `<div class="ach-icon">${staticAch.icon}</div><div class="ach-details"><h4>${staticAch.name}</h4><p>${staticAch.desc}</p></div>`;
+            container.appendChild(card);
+        }
+    }
+    
+    // 整合所有 UI 更新
+    function updateAllUI() {
+        updateUI();
+        updateAvatar();
+        updateAchievementsUI();
+    }
+    
+    // --- 儲存與讀取邏輯 (Firestore/Local Storage) ---
+    function getDocRef() {
+        if (!currentUser) return null;
+        if (currentUser.isGuest) {
+            // 遊客模式使用 Local Storage，不需要 Firestore 引用
+            return null;
+        }
+        return db.collection('users').doc(currentUser.uid);
+    }
+
+    async function loadGameFromFirestore() {
+        const docRef = getDocRef();
+        if (!docRef) return; 
+
+        try {
+            const doc = await docRef.get();
+            if (doc.exists) {
+                // 從雲端載入數據
+                gameState = doc.data().state;
+                // 確保靜態成就數據更新，防止舊資料遺漏新的 name/desc/icon
+                for (const id in achievements) {
+                     if (gameState.achievements[id]) {
+                          gameState.achievements[id].name = achievements[id].name;
+                          gameState.achievements[id].desc = achievements[id].desc;
+                          gameState.achievements[id].icon = achievements[id].icon;
+                     } else {
+                          gameState.achievements[id] = { ...achievements[id], unlocked: false };
+                     }
+                }
+                showToast("雲端進度載入完成！", 'success');
+            } else {
+                // 第一次登入，初始化並存檔
+                resetGameState();
+                showToast("新冒險家，開始你的旅程吧！", 'info');
+                // 顯示路線選擇介面
+                document.getElementById('path-selection-overlay').style.display = 'flex';
+                await saveGame();
+            }
+        } catch (error) {
+            console.error("載入 Firestore 失敗:", error);
+            showToast("載入雲端進度失敗！", 'error');
+        } finally {
+            updateAllUI();
+        }
+    }
+    
+    function loadGameFromLocalStorage() {
+        const stateJSON = localStorage.getItem(GUEST_STATE_KEY);
+        if (stateJSON) {
+            gameState = JSON.parse(stateJSON);
+            // 確保靜態成就數據更新
+            for (const id in achievements) {
+                 if (gameState.achievements[id]) {
+                      gameState.achievements[id].name = achievements[id].name;
+                      gameState.achievements[id].desc = achievements[id].desc;
+                      gameState.achievements[id].icon = achievements[id].icon;
+                 } else {
+                      gameState.achievements[id] = { ...achievements[id], unlocked: false };
+                 }
+            }
+            showToast("本地進度載入完成！", 'success');
+        } else {
+            resetGameState();
+            showToast("新遊客，請選擇你的冒險路線！", 'info');
+            document.getElementById('path-selection-overlay').style.display = 'flex';
+        }
+        updateAllUI();
+    }
+
+
+    async function saveGame() {
+        if (!currentUser) return;
+
+        if (currentUser.isGuest) {
+            // 遊客模式儲存到 Local Storage
+            localStorage.setItem(GUEST_STATE_KEY, JSON.stringify(gameState));
+            // showToast("進度已儲存至本機。", 'info', 1500);
+            return;
+        }
+
+        const docRef = getDocRef();
+        if (!docRef) return; 
+
+        try {
+            // 儲存到 Firestore
+            await docRef.set({
+                uid: currentUser.uid,
+                email: currentUser.email,
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+                state: gameState
+            }, { merge: true }); // 使用 merge 以免覆蓋其他用戶數據
+            // showToast("雲端進度已儲存。", 'info', 1500);
+        } catch (error) {
+            console.error("儲存 Firestore 失敗:", error);
+            showToast("雲端儲存失敗！", 'error');
+        }
+    }
+
+
+    // 彈出式通知
+    function showToast(message, type = 'default', duration = 3000) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        // 自動移除
+        setTimeout(() => {
+            toast.style.opacity = 0;
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                container.removeChild(toast);
+            }, 500);
+        }, duration);
+    }
+    
+    // --- 應用程式啟動 ---
+    window.onload = () => {
+        populateActivities();
+        // Firebase Auth listener 會在這邊接管載入邏輯
+    };
+    </script>
+</body>
+</html>
